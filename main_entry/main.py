@@ -1,4 +1,4 @@
-import config
+import main_entry.config
 from vlm_processor import process_svi_to_semantics
 from spatial_ops import extract_and_aggregate_features
 from dataset import SVI_AE_Dataset, create_dataloader
