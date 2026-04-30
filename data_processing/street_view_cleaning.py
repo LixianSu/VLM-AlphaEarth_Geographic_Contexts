@@ -67,6 +67,19 @@ def clean_and_rename_street_views():
     new_id_counter = 1
 
     print(f">>> 扫描完成，共发现 {len(coordinate_dict)} 个独立的坐标点。")
+    # ====== 教授的诊断探针 START ======
+    print("\n>>> [空间诊断] 文件夹读取情况核查：")
+    for angle_folder in Config.SVI_ANGLE_FOLDERS:
+        folder_path = Config.BASE_DATA_DIR / angle_folder
+        file_count = len(list(folder_path.glob("*.*")))
+        print(f"  - {angle_folder} 文件夹中识别到文件数: {file_count}")
+
+    if len(coordinate_dict) > 0:
+        sample_key = list(coordinate_dict.keys())[0]
+        print(f"\n>>> [空间诊断] 随机抽查一个坐标点 '{sample_key}' 的内部结构：")
+        print(f"  - 它包含的朝向有: {list(coordinate_dict[sample_key].keys())}")
+        print(f"  - 对应的文件路径: {coordinate_dict[sample_key]}")
+    # ====== 教授的诊断探针 END ======
     print(">>> 开始执行交叉验证与清洗转移...")
 
     for lat_lon, angle_paths in tqdm(coordinate_dict.items(), desc="处理进度"):
