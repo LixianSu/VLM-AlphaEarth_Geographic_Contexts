@@ -1,5 +1,5 @@
 from config import Config
-from data_processing.preprocessing.street_view_cleaning import clean_and_rename_street_views
+from data_processing.street_view_cleaning import clean_and_rename_street_views
 
 def main():
     """

@@ -33,7 +33,30 @@ def clean_and_rename_street_views():
             # 按照 "__" 分割，取后半部分的经纬度
             parts = filename.split("__")
             if len(parts) != 2:
-                # 记录不符合命名规范的异常文件
+                continue
+
+            lat_lon_str = parts[1]  # 例如 "22.47666476_114.1746823"
+
+            try:
+                # 进一步分割纬度和经度
+                lat_str, lon_str = lat_lon_str.split("_")
+
+                # 【核心修改】：引入空间容差
+                # 保留5位小数，约等于现实中的 1.1 米误差范围
+                # 保留4位小数，约等于现实中的 11 米误差范围
+                ROUNDING_DECIMALS = 5
+
+                lat = round(float(lat_str), ROUNDING_DECIMALS)
+                lon = round(float(lon_str), ROUNDING_DECIMALS)
+
+                # 重新组合成带有容差的统一坐标 Key
+                tolerance_key = f"{lat}_{lon}"
+
+                # 将该图片归入这个带容差的坐标聚类中，并保留原始文件名供后续复制
+                coordinate_dict[tolerance_key][angle] = img_path
+
+            except ValueError:
+                # 捕获可能的格式错误（如非数字字符）
                 continue
 
             lat_lon = parts[1]  # 例如 "22.47666476_114.1746823"
