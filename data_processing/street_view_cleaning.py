@@ -59,9 +59,6 @@ def clean_and_rename_street_views():
                 # 捕获可能的格式错误（如非数字字符）
                 continue
 
-            lat_lon = parts[1]  # 例如 "22.47666476_114.1746823"
-            coordinate_dict[lat_lon][angle] = img_path
-
     # 2. 筛选并复制符合条件的文件
     valid_locations = 0
     new_id_counter = 1
