@@ -12,7 +12,6 @@ import torch
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from tqdm import tqdm
 
-# 确保你的 config.py 已经按照我们之前的讨论完成了轻量化重构
 from main_entry.config import Config
 
 
@@ -27,16 +26,15 @@ def setup_controlled_vlm():
     """
     按需分配 GPU 资源并加载模型，避免挤占实验室公共算力。
     """
-    # 假设你的 Config 中定义了 gpu_id=[0] 和 vram_limit_gb=16
     gpu_ids = getattr(Config, 'gpu_id', [0])
     vram_limit_gb = getattr(Config, 'vram_limit_gb', 16)
 
-    print(f"🔧 正在配置计算沙箱: 启用 GPU {gpu_ids}, 单卡显存上限: {vram_limit_gb}GB")
+    print(f"正在配置计算沙箱: 启用 GPU {gpu_ids}, 单卡显存上限: {vram_limit_gb}GB")
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, gpu_ids))
     max_mem_dict = {i: f"{vram_limit_gb}GiB" for i in range(len(gpu_ids))}
 
-    print("⏳ 正在按设定的资源配额加载 Qwen2.5-VL 7B...")
+    print("正在按设定的资源配额加载 Qwen2.5-VL 7B...")
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         "Qwen/Qwen2.5-VL-7B-Instruct",
         torch_dtype=torch.bfloat16,
@@ -44,7 +42,7 @@ def setup_controlled_vlm():
         max_memory=max_mem_dict
     )
     processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
-    print("✅ 模型受控加载完成！")
+    print("模型受控加载完成！")
 
     return model, processor
 
@@ -58,22 +56,23 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
     all_images = glob.glob(os.path.join(folder_path, "*.jpg"))
     location_groups = {}
 
-    print("📂 正在扫描并解析街景图像坐标...")
+    print("正在扫描并解析街景图像坐标...")
     # ==========================================
     # 步骤 1：防御性解析文件并提取经纬度坐标
     # ==========================================
     for img_path in all_images:
         filename = os.path.basename(img_path)
-        name_without_ext = filename.split('.')[0]
+        # 核心修复：使用 os.path.splitext 避免被经纬度小数点误伤
+        name_without_ext = os.path.splitext(filename)[0]
         parts = name_without_ext.split('__')
 
         if len(parts) == 2:
             loc_id = parts[0]
             c = parts[1].split('_')
 
-            # 🛑 核心防御机制：校验文件名分段数量
+            # 核心防御机制：校验文件名分段数量
             if len(c) < 3:
-                print(f"⚠️ 格式跳过: {filename} (参数不足)")
+                print(f"格式跳过: {filename} (参数不足)")
                 continue
 
             try:
@@ -81,7 +80,7 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
                 lon = float(c[1])
                 heading = int(c[2])
             except ValueError:
-                print(f"⚠️ 类型跳过: {filename} (包含非数字字符)")
+                print(f"类型跳过: {filename} (包含非数字字符)")
                 continue
 
             if loc_id not in location_groups:
@@ -114,18 +113,18 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
             f.write(f"总计发现并剔除了 {len(missing_logs)} 个不完整采样点。\n\n")
             for log in missing_logs:
                 f.write(log + "\n")
-        print(f"⚠️ 发现 {len(missing_logs)} 个缺失视角的采样点。已剔除，日志保存至: {log_file_path}")
+        print(f"发现 {len(missing_logs)} 个缺失视角的采样点。已剔除，详细日志保存至: {log_file_path}")
     else:
-        print("✅ 完美！所有采样点均具备完整的 4 个视角。")
+        print("完美！所有采样点均具备完整的 4 个视角。")
 
     results_db = {}
     gdf_records = []
     target_locations = list(valid_location_groups.keys())
 
     # ==========================================
-    # 步骤 3：模型推理与空间记录构建 (加入 tqdm 监控)
+    # 步骤 3：模型推理与空间记录构建
     # ==========================================
-    pbar = tqdm(target_locations, desc="🏮 城市语境提取进度", unit="loc")
+    pbar = tqdm(target_locations, desc="城市语境提取进度", unit="loc")
 
     for loc_id in pbar:
         group_data = valid_location_groups[loc_id]
@@ -134,7 +133,7 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
 
         # 动态更新进度条显示显存占用
         mem_use = get_gpu_memory_usage()
-        pbar.set_description(f"🏮 处理中: {loc_id} | VRAM: {mem_use:.2f}GB")
+        pbar.set_description(f"处理中: {loc_id} | VRAM: {mem_use:.2f}GB")
 
         image_tuples.sort(key=lambda x: x[0])
         sorted_img_paths = [t[1] for t in image_tuples]
@@ -159,7 +158,6 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
             text=[text], images=image_inputs, videos=video_inputs, padding=True, return_tensors="pt"
         ).to(gpu_device)
 
-        # 执行推理：使用 no_grad 阻断梯度图构建，极大节省显存
         with torch.no_grad():
             generated_ids = VLM_model.generate(**inputs, max_new_tokens=1024, temperature=0.0)
 
@@ -203,8 +201,8 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
         gdf = gpd.GeoDataFrame(gdf_records, crs="EPSG:4326")
         out_shp_path = os.path.join(shp_dir, "SVI_Context_Results.shp")
         gdf.to_file(out_shp_path, driver='ESRI Shapefile', encoding='utf-8')
-        print(f"\n✅ 成功！空间矢量文件已保存至: {out_shp_path}")
+        print(f"\n成功！空间矢量文件已保存至: {out_shp_path}")
     else:
-        print("\n❌ 警告：未能生成任何有效记录，Shapefile 创建失败。")
+        print("\n警告：未能生成任何有效记录，Shapefile 创建失败。")
 
     return results_db
