@@ -159,7 +159,7 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
         ).to(gpu_device)
 
         with torch.no_grad():
-            generated_ids = VLM_model.generate(**inputs, max_new_tokens=1024, temperature=0.0)
+            generated_ids = VLM_model.generate(**inputs, max_new_tokens=1024, do_sample=False) # do_sample=False: temperature=0.0
 
         generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
         output_text = processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)[0]
