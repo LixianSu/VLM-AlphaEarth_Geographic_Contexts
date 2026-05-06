@@ -12,26 +12,25 @@ class Config:
     # 针对你本地环境的绝对路径
     BASE_DATA_DIR = Path(r"E:\Data\Hong Kong\Street view images\Street View 100m\All")
 
-    # 清洗好的全方位街景图片的目录
-    Cleaned_GSVs = Path(r"E:\Data\Hong Kong\Street view images\Street View 100m\All\Cleaned")
-
     # 原始四个角度街景的文件夹名称
     SVI_ANGLE_FOLDERS = ["HK_0", "HK_90", "HK_180", "HK_270"]
 
-    # 清洗后的输出路径
-    CLEANED_SVI_DIR = BASE_DATA_DIR / "cleaned"
+    # CLEANED_SVI_DIR，并匹配你本地的 "Cleaned" 大小写
+    CLEANED_SVI_DIR = BASE_DATA_DIR / "Cleaned"
 
     # ==========================================
-    # 2. 模型与其他配置 (为后续阶段保留，当前暂时挂起)
+    # 2. 模型静态配置 (The Blueprint)
     # ==========================================
-    # 这些是我们之前讨论过的参数，保留在这里以维持配置文件的完整性
-    # Qwen训练配置
-    VLM_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-7B-Instruct",
-        torch_dtype=torch.bfloat16,
-        device_map="auto"
-    )
-    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+    # 不能在这里 import transformers 和加载模型
+    # 只保留模型名称，主程序去负责实际的物理加载。
+    gpu_id = [0] # 使用第一张gpu
+
+    vram_limit_gb = 16 # 限制使用16GB内存
+
+    VLM_MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
+
+    # 也可以把后续空间池化相关的超参数静态地放在这里
+    BUFFER_RADIUS_M = 50  # 欧氏距离缓冲区半径（米）
 
     @classmethod
     def setup_directories(cls):
