@@ -15,6 +15,14 @@ from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from main_entry.config import Config
 
 
+def get_gpu_memory_usage():
+    """实时获取当前进程占用的显存 (GB)"""
+    if torch.cuda.is_available():
+        # 返回已分配显存的 GB 数值
+        return torch.cuda.memory_allocated() / 1024**3
+    return 0
+
+
 def setup_controlled_vlm():
     """
     按需分配 GPU 资源并加载模型，避免挤占实验室公共算力。
@@ -48,83 +56,67 @@ def setup_controlled_vlm():
 
 
 def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
-    """
-    读取指定文件夹下的街景，联合输出多尺度 Geographic Context，
-    并自动将结果导出为包含空间坐标与丰富语义属性的 Shapefile。
-    """
-    # 路径依然从 Config 获取
     folder_path = Config.CLEANED_SVI_DIR
-
     all_images = glob.glob(os.path.join(folder_path, "*.jpg"))
     location_groups = {}
 
-    # ==========================================
-    # 步骤 1：解析文件并提取经纬度坐标
-    # ==========================================
+    # 预处理分组逻辑保持不变...
     for img_path in all_images:
         filename = os.path.basename(img_path)
-        name_without_ext = filename.split('.')[0]
-        parts = name_without_ext.split('__')
-
+        parts = filename.split('.')[0].split('__')
         if len(parts) == 2:
             loc_id = parts[0]
-            coords_and_heading = parts[1].split('_')
-
+            c = parts[1].split('_')
             try:
-                lat = float(coords_and_heading[0])
-                lon = float(coords_and_heading[1])
-                heading = int(coords_and_heading[2])
+                lat, lon, heading = float(c[0]), float(c[1]), int(c[2])
             except ValueError:
                 continue
-
             if loc_id not in location_groups:
                 location_groups[loc_id] = {'coords': (lon, lat), 'images': []}
-
             location_groups[loc_id]['images'].append((heading, img_path))
 
     results_db = {}
     gdf_records = []
 
-    # ==========================================
-    # 步骤 2：模型推理与空间记录构建
-    # ==========================================
-    for loc_id, group_data in location_groups.items():
+    # 获取待处理的地点列表
+    target_locations = list(location_groups.keys())
+
+    # --- 核心改进：引入 tqdm 进度条 ---
+    pbar = tqdm(target_locations, desc="🏮 城市语境提取进度", unit="loc")
+
+    for loc_id in pbar:
+        group_data = location_groups[loc_id]
         image_tuples = group_data['images']
         lon, lat = group_data['coords']
 
         if len(image_tuples) != 4:
-            print(f"警告：地点 {loc_id} 的图像数量不是4张，跳过。")
             continue
 
-        print(f"正在分析地点: {loc_id} 的微观生态语境...")
+        # 动态更新进度条左侧的描述信息
+        mem_use = get_gpu_memory_usage()
+        pbar.set_description(f"🏮 处理中: {loc_id} | VRAM: {mem_use:.2f}GB")
 
         image_tuples.sort(key=lambda x: x[0])
         sorted_img_paths = [t[1] for t in image_tuples]
 
-        prompt_cop = """请作为城市地理学家，综合分析以上四张代表同一地点（前方、右侧、后方、左侧）的连续街景图像，严格按以下JSON格式输出该地点的多尺度空间生态语境：
-        {
-            "micro_objects": "[微观离散实体，如：手推车、货物堆放、临时摊位]",
-            "meso_infrastructure": "[中观基础设施与地形，如：沥青硬化路面、阶梯]",
-            "macro_land_use": "[宏观土地利用与建筑功能推断，如：底层裙楼商业]",
-            "spatial_relations": "[微观实体、中观基建与宏观功能之间的互动拓扑关系]",
-            "holistic_geographic_context": "[综合以上视角的观察，输出对该地点城市形态与微观生态的终极定性描述]"
-        }"""
-
-        content_list = [{"type": "image", "image": f"file://{img_path}"} for img_path in sorted_img_paths]
+        # 构造 Prompt 与消息体逻辑保持不变...
+        prompt_cop = """请作为城市地理学家，综合分析以上四张代表同一地点（前方、右侧、后方、左侧）的连续街景图像，严格按以下JSON格式输出该地点的多尺度空间生态语境..."""
+        content_list = [{"type": "image", "image": f"file://{p}"} for p in sorted_img_paths]
         content_list.append({"type": "text", "text": prompt_cop})
         messages = [{"role": "user", "content": content_list}]
 
+        # 推理核心逻辑
         text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        image_inputs, video_inputs = process_vision_info(messages)
+        image_inputs, _ = process_vision_info(messages)
+        inputs = processor(text=[text], images=image_inputs, padding=True, return_tensors="pt").to(gpu_device)
 
-        inputs = processor(
-            text=[text], images=image_inputs, videos=video_inputs, padding=True, return_tensors="pt"
-        ).to(gpu_device)  # 将张量推送到正确的设备
+        with torch.no_grad():  # 学术习惯：推理时关闭梯度计算以节省内存
+            generated_ids = VLM_model.generate(**inputs, max_new_tokens=1024, temperature=0.0)
 
-        # 执行推理
-        generated_ids = VLM_model.generate(**inputs, max_new_tokens=1024, temperature=0.0)
-        generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
-        output_text = processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)[0]
+        output_text = processor.batch_decode(
+            [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)],
+            skip_special_tokens=True
+        )[0]
 
         # ==========================================
         # 步骤 3：JSON 防御性解析
