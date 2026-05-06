@@ -187,11 +187,11 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
         gdf_records.append({
             "loc_id": loc_id,
             "geometry": Point(lon, lat),
-            "mic_obj": parsed_json.get("micro_objects", "")[:250],
-            "mes_inf": parsed_json.get("meso_infrastructure", "")[:250],
-            "mac_lu": parsed_json.get("macro_land_use", "")[:250],
-            "spa_rel": parsed_json.get("spatial_relations", "")[:250],
-            "hol_ctx": parsed_json.get("holistic_geographic_context", "")[:250]
+            "mic_obj": str(parsed_json.get("micro_objects", ""))[:250],
+            "mes_inf": str(parsed_json.get("meso_infrastructure", ""))[:250],
+            "mac_lu": str(parsed_json.get("macro_land_use", ""))[:250],
+            "spa_rel": str(parsed_json.get("spatial_relations", ""))[:250],
+            "hol_ctx": str(parsed_json.get("holistic_geographic_context", ""))[:250]
         })
 
     # ==========================================
