@@ -12,6 +12,9 @@ class Config:
     # 针对你本地环境的绝对路径
     BASE_DATA_DIR = Path(r"E:\Data\Hong Kong\Street view images\Street View 100m\All")
 
+    # 清洗好的全方位街景图片的目录
+    Cleaned_GSVs = Path(r"E:\Data\Hong Kong\Street view images\Street View 100m\All\Cleaned")
+
     # 原始四个角度街景的文件夹名称
     SVI_ANGLE_FOLDERS = ["HK_0", "HK_90", "HK_180", "HK_270"]
 
@@ -22,11 +25,13 @@ class Config:
     # 2. 模型与其他配置 (为后续阶段保留，当前暂时挂起)
     # ==========================================
     # 这些是我们之前讨论过的参数，保留在这里以维持配置文件的完整性
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your-fallback-key")
-    VLM_MODEL = "gpt-4o"
-    RADIUS_BASE = 50
-    RADIUS_AUG = 150
-    MAX_NETWORK_DIST = 200
+    # Qwen训练配置
+    VLM_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        "Qwen/Qwen2.5-VL-7B-Instruct",
+        torch_dtype=torch.bfloat16,
+        device_map="auto"
+    )
+    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
 
     @classmethod
     def setup_directories(cls):
