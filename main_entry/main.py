@@ -17,7 +17,8 @@ def main():
     # clean_and_rename_street_views()
 
     # 步骤 2： 读取街景数据进行分析
-    qwen25vl_to_shapefile()
+    model, processor = setup_controlled_vlm()
+    qwen25vl_to_shapefile(model, processor, gpu_device = "cuda")
 
     print("\n>>> 当前阶段任务已全部执行完毕。等待进入 VLM 语义提取阶段。")
 
