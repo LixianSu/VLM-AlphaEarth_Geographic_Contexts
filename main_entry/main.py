@@ -14,7 +14,7 @@ def main():
     Config.setup_directories()
 
     # 步骤 1: 街景数据清洗与重命名
-    clean_and_rename_street_views()
+    # clean_and_rename_street_views()
 
     # 步骤 2： 读取街景数据进行分析
     qwen25vl_to_shapefile()

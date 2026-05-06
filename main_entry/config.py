@@ -10,7 +10,7 @@ class Config:
     # 1. 基础路径配置 (Directory Paths)
     # ==========================================
     # 针对你本地环境的绝对路径
-    BASE_DATA_DIR = Path(r"E:\Data\Hong Kong\Street view images\Street View 100m\All")
+    BASE_DATA_DIR = Path(r"D:\Su_Lixian\Data\Google Street View")
 
     # 原始四个角度街景的文件夹名称
     SVI_ANGLE_FOLDERS = ["HK_0", "HK_90", "HK_180", "HK_270"]
@@ -21,7 +21,7 @@ class Config:
     # ==========================================
     # 2. 模型静态配置 (The Blueprint)
     # ==========================================
-    # 不能在这里 import transformers 和加载模型
+    # 不在这里 import transformers 和加载模型
     # 只保留模型名称，主程序去负责实际的物理加载。
     gpu_id = [0] # 使用第一张gpu
 
