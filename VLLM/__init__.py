@@ -1,4 +1,4 @@
-# 文件位置: VLLM/__init__.py
+# 文件位置: vllm/__init__.py
 
 # 直接从同级目录下的脚本导入清洗函数
 from qwen25vl import qwen25vl
