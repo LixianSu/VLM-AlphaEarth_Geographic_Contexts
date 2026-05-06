@@ -1,6 +1,7 @@
 from config import Config
 from data_processing.street_view_cleaning import clean_and_rename_street_views
 from vllm.qwen25vl import qwen25vl_to_shapefile
+from vllm.qwen25vl import setup_controlled_vlm
 def main():
     """
     SVI-AE 跨模态地理空间对齐框架 - 主控入口
