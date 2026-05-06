@@ -16,7 +16,9 @@ class Config:
     SVI_ANGLE_FOLDERS = ["HK_0", "HK_90", "HK_180", "HK_270"]
 
     # CLEANED_SVI_DIR，并匹配你本地的 "Cleaned" 大小写
-    CLEANED_SVI_DIR = BASE_DATA_DIR / "Cleaned"
+    # CLEANED_SVI_DIR = BASE_DATA_DIR / "Cleaned"
+    # 测试路径
+    CLEANED_SVI_DIR = BASE_DATA_DIR / "Cleaned_Test"
 
     # ==========================================
     # 2. 模型静态配置 (The Blueprint)
