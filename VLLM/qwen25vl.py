@@ -113,7 +113,7 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
                 f.write(log + "\n")
         print(f"发现 {len(missing_logs)} 个缺失视角的采样点。已剔除，详细日志保存至: {log_file_path}")
     else:
-        print("所有采样点均具备完整的 4 个视角。")
+        print("\n所有采样点均具备完整的 4 个视角。")
 
     results_db = {}
     gdf_records = []     # 用于生成 Shapefile（长度截断）
