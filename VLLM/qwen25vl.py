@@ -38,7 +38,7 @@ def setup_controlled_vlm():
     print("正在按设定的资源配额加载 Qwen2.5-VL 7B...")
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         "Qwen/Qwen2.5-VL-7B-Instruct",
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         device_map="auto",
         max_memory=max_mem_dict
     )
