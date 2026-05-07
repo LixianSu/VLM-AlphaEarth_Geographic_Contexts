@@ -144,7 +144,7 @@ def qwen25vl_to_shapefile(VLM_model, processor, gpu_device="cuda"):
             "meso_infrastructure": "[中观基础设施与地形，如：沥青硬化路面、阶梯]",
             "macro_land_use": "[宏观土地利用与建筑功能推断，如：底层裙楼商业]",
             "spatial_relations": "[微观实体、中观基建与宏观功能之间的互动拓扑关系]",
-            "holistic_geographic_context": "[综合以上视角的观察，输出对该地点城市形态与微观生态的终极定性描述]"
+            "holistic_geographic_context": "[综合以上视角的观察，输出对该地   点城市形态与微观生态的终极定性描述]"
         }"""
 
         content_list = [{"type": "image", "image": f"file://{img_path}"} for img_path in sorted_img_paths]
